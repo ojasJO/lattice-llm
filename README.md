@@ -20,17 +20,74 @@ clock synchronisation and the research tooling.
 
 ---
 
-## Quick start
+## Setting up a laptop
 
-On **every** laptop (Windows 10/11, Python 3.10+):
+Do this once on **every** laptop you want in the cluster (Windows 10 or 11). All laptops should be
+on the same Wi-Fi network or hotspot.
+
+### 1. Install Python (skip if you already have 3.10 or newer)
+
+Open PowerShell and run:
 
 ```powershell
-cd lattice
+winget install -e --id Python.Python.3.12
+```
+
+Or download it from [python.org](https://www.python.org/downloads/) and tick **"Add python.exe to PATH"**
+during setup. Close and reopen PowerShell afterwards. You can check it with `py --version`.
+
+### 2. Get Lattice
+
+**Option A: download the ZIP (no git needed)**
+
+1. Download [lattice-llm-main.zip](https://github.com/ojasJO/lattice-llm/archive/refs/heads/main.zip)
+   (or on this page: green **Code** button → **Download ZIP**).
+2. Right-click the ZIP → **Properties** → tick **Unblock** → **OK**. This stops Windows from asking
+   about every script inside it.
+3. Right-click → **Extract All…**, for example to `C:\lattice-llm-main`.
+
+**Option B: git**
+
+```powershell
+git clone https://github.com/ojasJO/lattice-llm.git
+```
+
+**Option C: from a laptop that already runs Lattice.** Open `http://<that-laptop's-ip>:7470/get` in a
+browser. The address is printed in its terminal and shown under *Devices → Invite another laptop*.
+
+### 3. Start it
+
+Open PowerShell in the folder (in Explorer: open the folder, click the address bar, type `powershell`,
+press Enter) and run:
+
+```powershell
 .\start.bat
 ```
 
-The first run creates `.venv` and installs `aiohttp` and `psutil` (about 5 MB). Your browser then
-opens the dashboard at `http://127.0.0.1:7470`.
+You can also double-click `start.bat`.
+
+* The first run takes about a minute. It creates a private Python environment in `.venv` and installs
+  `aiohttp` and `psutil` (about 5 MB). Later starts are instant.
+* Your browser opens the dashboard at `http://127.0.0.1:7470`.
+* When Windows Firewall asks about Python, tick **Private networks** and press **Allow**. Without this,
+  the other laptops can't see this one.
+* Keep the terminal window open while you use Lattice. To stop it, press `Ctrl+C` or close the window.
+
+The repository has no models or binaries in it. The llama.cpp runtime (38 MB) and the models are
+downloaded from inside the app the first time they're needed. A paired laptop that already has them
+serves them over the LAN, so only one laptop needs a fast Internet connection.
+
+### Updating
+
+Use the same version of Lattice on every laptop. To update, run `git pull` in the folder, or download
+the ZIP again and copy your old `data\` and `models\` folders into the new one. That keeps your pairings,
+run history and downloaded models.
+
+---
+
+## Using it
+
+With Lattice running on each laptop:
 
 1. **Devices.** Each laptop appears under *Nearby* within a couple of seconds. Press **Connect**.
 2. The other laptop shows **Connection request** with a 6-digit code. Check that it matches, then press **Approve**.
@@ -41,15 +98,27 @@ opens the dashboard at `http://127.0.0.1:7470`.
 5. **Playground.** Chat with the cluster. Every reply is measured.
 6. **Experiments.** Run sweeps and export CSV/JSON.
 
-**Getting Lattice onto a new laptop:** on that laptop, open `http://<this-laptop-ip>:7470/get`
-(the address is printed in the terminal and shown under *Devices → Invite*). It downloads a 125 KB zip.
+### Troubleshooting
 
-**If laptops can't see each other:**
-* Allow Python on **Private** networks when Windows asks, or run `tools\allow-firewall.bat` as
-  administrator once on each laptop.
-* Make sure the Wi-Fi is set to **Private**, not Public.
-* Campus or hotel Wi-Fi often blocks laptop-to-laptop traffic ("client isolation"). Use a phone
-  hotspot or an Ethernet cable instead, or add the other laptop by IP under *Devices → Add by IP*.
+**Laptops can't see each other:**
+* Allow Python on **Private** networks when Windows asks. If you dismissed that prompt, right-click
+  `tools\allow-firewall.bat` → **Run as administrator** once on each laptop.
+* Make sure the Wi-Fi is set to **Private**, not Public: *Settings → Network & Internet → Wi-Fi →* your
+  network *→ Private*.
+* If a laptop still doesn't show up under *Nearby*, add it by IP under *Devices → Add by IP*. Find a
+  laptop's IP in its Lattice terminal, or with `ipconfig`.
+* Campus or hotel Wi-Fi often blocks laptop-to-laptop traffic completely ("client isolation"). Use a
+  phone hotspot or an Ethernet cable instead.
+
+**`start.bat` says Python wasn't found, or typing `python` opens the Microsoft Store:** install Python as
+in step 1, then reopen PowerShell. If it still fails, turn off the store shortcut: *Settings → Apps →
+Advanced app settings → App execution aliases →* switch off **python.exe** and **python3.exe**.
+
+**"Windows protected your PC" or a security warning when starting:** you skipped *Unblock* on the ZIP.
+Click **Run** (or **More info → Run anyway**), or run `Get-ChildItem -Recurse | Unblock-File` in the folder once.
+
+**Something else went wrong:** the *Logs* page in the dashboard shows Lattice's own events and the
+llama.cpp output. Log files are in `data\logs\`.
 
 ---
 
