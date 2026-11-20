@@ -101,10 +101,11 @@ With Lattice running on each laptop:
 ### Troubleshooting
 
 **Laptops can't see each other:**
-* Allow Python on **Private** networks when Windows asks. If you dismissed that prompt, right-click
-  `tools\allow-firewall.bat` → **Run as administrator** once on each laptop.
-* Make sure the Wi-Fi is set to **Private**, not Public: *Settings → Network & Internet → Wi-Fi →* your
-  network *→ Private*.
+* The usual cause: a laptop shows up under *Nearby*, but **Connect** does nothing and the other laptop
+  never shows the approval prompt. Windows Firewall is blocking incoming connections. This always happens
+  on Wi-Fi marked **Public**, which includes most campus networks. Fix it on **each** laptop: right-click
+  `tools\allow-firewall.bat` → **Run as administrator**. It opens Lattice's ports to devices on your own
+  network only, on both Private and Public Wi-Fi. No restart is needed.
 * If a laptop still doesn't show up under *Nearby*, add it by IP under *Devices → Add by IP*. Find a
   laptop's IP in its Lattice terminal, or with `ipconfig`.
 * Campus or hotel Wi-Fi often blocks laptop-to-laptop traffic completely ("client isolation"). Use a
