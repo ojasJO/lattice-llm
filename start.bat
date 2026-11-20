@@ -48,7 +48,13 @@ if errorlevel 1 (
 )
 
 ".venv\Scripts\python.exe" -m lattice %*
-exit /b %errorlevel%
+set "RC=%errorlevel%"
+if not "%RC%"=="0" (
+  echo.
+  echo [lattice] Lattice stopped unexpectedly ^(exit code %RC%^). Details: data\logs\crash.log
+  pause
+)
+exit /b %RC%
 
 :fail
 echo.

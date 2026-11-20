@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import faulthandler
 import socket
 import sys
+import time
+import traceback
 import webbrowser
 from pathlib import Path
 
@@ -47,6 +50,7 @@ async def main_async(args) -> None:
         except (AttributeError, ValueError):
             pass
     high_resolution_timers()
+    asyncio.get_running_loop().set_exception_handler(_loop_exception)
     port = pick_port(args.port)
     home = Path(args.home).resolve() if args.home else ROOT
     node = Node(home, port, args.name, discovery=not args.no_discovery)
@@ -86,6 +90,20 @@ async def main_async(args) -> None:
         await runner.cleanup()
 
 
+def _loop_exception(loop, ctx) -> None:
+    """A peer vanishing mid-transfer is normal in a cluster; don't spray tracebacks for it."""
+    exc = ctx.get("exception")
+    if isinstance(exc, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+        return
+    loop.default_exception_handler(ctx)
+
+
+def _crash_log(home: Path) -> Path:
+    d = home / "data" / "logs"
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "crash.log"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="lattice", description="Pool nearby laptops into one LLM inference cluster.")
     ap.add_argument("--port", type=int, default=DEFAULT_HTTP_PORT, help="dashboard/peer HTTP port (default 7470)")
@@ -94,10 +112,21 @@ def main() -> None:
     ap.add_argument("--no-browser", action="store_true", help="do not open the dashboard automatically")
     ap.add_argument("--no-discovery", action="store_true", help="disable LAN discovery beacons")
     args = ap.parse_args()
+    log = _crash_log(Path(args.home).resolve() if args.home else ROOT)
+    fh = open(log, "a", encoding="utf-8")
+    faulthandler.enable(fh)  # hard crashes (access violations in native code) leave a trace here
     try:
         asyncio.run(main_async(args))
     except KeyboardInterrupt:
         pass
+    except SystemExit:
+        raise
+    except BaseException:
+        tb = traceback.format_exc()
+        fh.write(f"\n=== {time.strftime('%Y-%m-%d %H:%M:%S')} Lattice crashed ===\n{tb}")
+        fh.flush()
+        print(f"\n  Lattice crashed. Details were saved to {log}\n\n{tb}", file=sys.stderr, flush=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
