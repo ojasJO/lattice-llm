@@ -149,6 +149,11 @@ class Session:
         return "cpu" if (dev or "").upper().startswith("CPU") else "gpu"
 
     async def _run(self, cfg: dict) -> None:
+        # Relaunching over a live cluster: release the old llama-server and workers first. An rpc-server
+        # serves one client at a time, so a stale connection would make the new launch hang.
+        if self.llama.running or self.plan:
+            await self._teardown()
+            self.plan, self.draft_plan = [], None
         self.config = cfg
         self.state = "launching"
         self.error = None

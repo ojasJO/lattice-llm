@@ -491,6 +491,20 @@ def build_app(node: "Node") -> web.Application:
 
     r.add_get("/peer/gate/stats", peer_gate_stats)
 
+    async def peer_logs(request):
+        """Tail of a worker's own log files, so the coordinator can diagnose a remote failure."""
+        name = request.match_info["name"]
+        if name not in ("crash.log", "rpc-server.log"):
+            return jerr("unknown log", 404)
+        p = node.paths.logs / name
+        if not p.exists():
+            return web.Response(text="")
+        with open(p, "rb") as f:
+            f.seek(max(0, p.stat().st_size - 64_000))
+            return web.Response(text=f.read().decode("utf-8", errors="replace"))
+
+    r.add_get("/peer/logs/{name}", peer_logs)
+
     # ================================================================ bootstrap
     zip_cache: dict = {}
 
